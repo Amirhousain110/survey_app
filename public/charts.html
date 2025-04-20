@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحلیل داده‌های پرسشنامه</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>تحلیل داده‌های پرسشنامه</h1>
+            <button class="logout-btn" onclick="logout()">خروج</button>
+        </div>
+        
+        <div class="grid">
+            <!-- نمودارهای ستونی -->
+            <div class="chart-container">
+                <h2>توزیع نمرات تعارض با والدین</h2>
+                <canvas id="parentConflictChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>توزیع نمرات بی ثباتی هیجانی</h2>
+                <canvas id="emotionalInstabilityChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>توزیع نمرات وابستگی به فضای مجازی</h2>
+                <canvas id="socialMediaDependencyChart"></canvas>
+            </div>
+
+            <!-- نمودار جعبه‌ای -->
+            <div class="chart-container">
+                <h2>مقایسه نمرات بین سه بخش</h2>
+                <canvas id="boxPlotChart"></canvas>
+            </div>
+
+            <!-- نمودارهای پراکندگی -->
+            <div class="chart-container">
+                <h2>رابطه بین تعارض با والدین و بی ثباتی هیجانی</h2>
+                <canvas id="scatterPlot1"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>رابطه بین بی ثباتی هیجانی و وابستگی به فضای مجازی</h2>
+                <canvas id="scatterPlot2"></canvas>
+            </div>
+
+            <!-- نمودار دایره‌ای -->
+            <div class="chart-container">
+                <h2>نسبت نمرات بالا و پایین - تعارض با والدین</h2>
+                <canvas id="pieChart1"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>نسبت نمرات بالا و پایین - بی ثباتی هیجانی</h2>
+                <canvas id="pieChart2"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بررسی دسترسی به صفحه
+        function checkAccess() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.has('password')) {
+                window.location.href = '/charts';
+                return false;
+            }
+            return true;
+        }
+
+        // تابع خروج
+        function logout() {
+            window.location.href = '/charts';
+        }
+
+        // تابع برای خواندن فایل CSV
+        async function loadCSVData() {
+            try {
+                const response = await fetch('/survey_responses.csv');
+                const csvText = await response.text();
+                const result = Papa.parse(csvText, { header: true });
+                return result.data;
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                return [];
+            }
+        }
+
+        // تابع برای محاسبه میانگین نمرات هر بخش
+        function calculateSectionAverages(data) {
+            const parentConflict = [];
+            const emotionalInstability = [];
+            const socialMediaDependency = [];
+
+            data.forEach(row => {
+                // محاسبه میانگین تعارض با والدین (سوالات 1-5)
+                const parentScores = [row.q1, row.q2, row.q3, row.q4, row.q5].map(Number);
+                parentConflict.push(parentScores.reduce((a, b) => a + b, 0) / 5);
+
+                // محاسبه میانگین بی ثباتی هیجانی (سوالات 6-10)
+                const emotionalScores = [row.q6, row.q7, row.q8, row.q9, row.q10].map(Number);
+                emotionalInstability.push(emotionalScores.reduce((a, b) => a + b, 0) / 5);
+
+                // محاسبه میانگین وابستگی به فضای مجازی (سوالات 11-15)
+                const socialScores = [row.q11, row.q12, row.q13, row.q14, row.q15].map(Number);
+                socialMediaDependency.push(socialScores.reduce((a, b) => a + b, 0) / 5);
+            });
+
+            return {
+                parentConflict,
+                emotionalInstability,
+                socialMediaDependency
+            };
+        }
+
+        // تابع برای ایجاد نمودارهای ستونی
+        function createBarCharts(data) {
+            const labels = ['1', '2', '3', '4', '5'];
+            
+            // نمودار تعارض با والدین
+            new Chart(document.getElementById('parentConflictChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['سوال 1', 'سوال 2', 'سوال 3', 'سوال 4', 'سوال 5'],
+                    datasets: [{
+                        label: 'تعداد پاسخ‌ها',
+                        data: labels.map(label => 
+                            data.filter(row => row.q1 === label).length
+                        ),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    }]
+                }
+            });
+
+            // نمودار بی ثباتی هیجانی
+            new Chart(document.getElementById('emotionalInstabilityChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['سوال 6', 'سوال 7', 'سوال 8', 'سوال 9', 'سوال 10'],
+                    datasets: [{
+                        label: 'تعداد پاسخ‌ها',
+                        data: labels.map(label => 
+                            data.filter(row => row.q6 === label).length
+                        ),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                    }]
+                }
+            });
+
+            // نمودار وابستگی به فضای مجازی
+            new Chart(document.getElementById('socialMediaDependencyChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['سوال 11', 'سوال 12', 'سوال 13', 'سوال 14', 'سوال 15'],
+                    datasets: [{
+                        label: 'تعداد پاسخ‌ها',
+                        data: labels.map(label => 
+                            data.filter(row => row.q11 === label).length
+                        ),
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                    }]
+                }
+            });
+        }
+
+        // تابع برای ایجاد نمودارهای پراکندگی
+        function createScatterPlots(averages) {
+            // نمودار پراکندگی 1
+            new Chart(document.getElementById('scatterPlot1'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'تعارض با والدین vs بی ثباتی هیجانی',
+                        data: averages.parentConflict.map((value, index) => ({
+                            x: value,
+                            y: averages.emotionalInstability[index]
+                        })),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'تعارض با والدین'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'بی ثباتی هیجانی'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // نمودار پراکندگی 2
+            new Chart(document.getElementById('scatterPlot2'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'بی ثباتی هیجانی vs وابستگی به فضای مجازی',
+                        data: averages.emotionalInstability.map((value, index) => ({
+                            x: value,
+                            y: averages.socialMediaDependency[index]
+                        })),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'بی ثباتی هیجانی'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'وابستگی به فضای مجازی'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // تابع برای ایجاد نمودارهای دایره‌ای
+        function createPieCharts(data) {
+            // نمودار دایره‌ای 1
+            new Chart(document.getElementById('pieChart1'), {
+                type: 'pie',
+                data: {
+                    labels: ['نمرات پایین (1-2)', 'نمرات متوسط (3)', 'نمرات بالا (4-5)'],
+                    datasets: [{
+                        data: [
+                            data.filter(row => ['1', '2'].includes(row.q1)).length,
+                            data.filter(row => row.q1 === '3').length,
+                            data.filter(row => ['4', '5'].includes(row.q1)).length
+                        ],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(75, 192, 192, 0.5)'
+                        ]
+                    }]
+                }
+            });
+
+            // نمودار دایره‌ای 2
+            new Chart(document.getElementById('pieChart2'), {
+                type: 'pie',
+                data: {
+                    labels: ['نمرات پایین (1-2)', 'نمرات متوسط (3)', 'نمرات بالا (4-5)'],
+                    datasets: [{
+                        data: [
+                            data.filter(row => ['1', '2'].includes(row.q6)).length,
+                            data.filter(row => row.q6 === '3').length,
+                            data.filter(row => ['4', '5'].includes(row.q6)).length
+                        ],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(75, 192, 192, 0.5)'
+                        ]
+                    }]
+                }
+            });
+        }
+
+        // اجرای اصلی
+        async function init() {
+            if (!checkAccess()) return;
+            
+            const data = await loadCSVData();
+            if (data.length > 0) {
+                const averages = calculateSectionAverages(data);
+                createBarCharts(data);
+                createScatterPlots(averages);
+                createPieCharts(data);
+            } else {
+                console.error('No data available');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html> 

@@ -87,6 +87,18 @@
                 <h2>نسبت نمرات بالا و پایین - بی ثباتی هیجانی</h2>
                 <canvas id="pieChart2"></canvas>
             </div>
+
+            <!-- نمودار میله‌ای گروهی -->
+            <div class="chart-container">
+                <h2>مقایسه نمرات گروه‌های مختلف</h2>
+                <canvas id="groupedBarChart"></canvas>
+            </div>
+
+            <!-- ماتریس همبستگی -->
+            <div class="chart-container">
+                <h2>ماتریس همبستگی</h2>
+                <canvas id="correlationMatrix"></canvas>
+            </div>
         </div>
     </div>
 
@@ -289,6 +301,124 @@
             });
         }
 
+        // تابع برای ایجاد نمودار میله‌ای گروهی
+        function createGroupedBarChart(data) {
+            const grades = ['هفتم', 'هشتم', 'نهم'];
+            const sections = ['تعارض با والدین', 'بی ثباتی هیجانی', 'وابستگی به فضای مجازی'];
+
+            const datasets = sections.map((section, index) => {
+                const color = index === 0 ? 'rgba(54, 162, 235, 0.5)' : index === 1 ? 'rgba(255, 99, 132, 0.5)' : 'rgba(75, 192, 192, 0.5)';
+                return {
+                    label: section,
+                    data: grades.map(grade => {
+                        const filteredData = data.filter(row => row.grade === grade);
+                        if (filteredData.length === 0) return 0;
+                        const scores = filteredData.map(row => {
+                            if (section === 'تعارض با والدین') {
+                                return [row.q1, row.q2, row.q3, row.q4, row.q5].map(Number).reduce((a, b) => a + b, 0) / 5;
+                            } else if (section === 'بی ثباتی هیجانی') {
+                                return [row.q6, row.q7, row.q8, row.q9, row.q10].map(Number).reduce((a, b) => a + b, 0) / 5;
+                            } else {
+                                return [row.q11, row.q12, row.q13, row.q14, row.q15].map(Number).reduce((a, b) => a + b, 0) / 5;
+                            }
+                        });
+                        return scores.reduce((a, b) => a + b, 0) / scores.length;
+                    }),
+                    backgroundColor: color
+                };
+            });
+
+            new Chart(document.getElementById('groupedBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: grades,
+                    datasets: datasets
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'میانگین نمره'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // تابع برای ایجاد ماتریس همبستگی
+        function createCorrelationMatrix(averages) {
+            const labels = ['تعارض با والدین', 'بی ثباتی هیجانی', 'وابستگی به فضای مجازی'];
+            const data = [
+                [1, calculateCorrelation(averages.parentConflict, averages.emotionalInstability), calculateCorrelation(averages.parentConflict, averages.socialMediaDependency)],
+                [calculateCorrelation(averages.emotionalInstability, averages.parentConflict), 1, calculateCorrelation(averages.emotionalInstability, averages.socialMediaDependency)],
+                [calculateCorrelation(averages.socialMediaDependency, averages.parentConflict), calculateCorrelation(averages.socialMediaDependency, averages.emotionalInstability), 1]
+            ];
+
+            new Chart(document.getElementById('correlationMatrix'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'ماتریس همبستگی',
+                        data: data.flatMap((row, i) => row.map((value, j) => ({ x: i, y: j, r: Math.abs(value) * 10 }))),
+                        backgroundColor: data.flatMap(row => row.map(value => `rgba(54, 162, 235, ${Math.abs(value)})`))
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function(value) {
+                                    return labels[value];
+                                }
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return labels[value];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // تابع برای ایجاد نمودار جعبه‌ای
+        function createBoxPlot(averages) {
+            new Chart(document.getElementById('boxPlotChart'), {
+                type: 'boxplot',
+                data: {
+                    labels: ['تعارض با والدین', 'بی ثباتی هیجانی', 'وابستگی به فضای مجازی'],
+                    datasets: [{
+                        label: 'نمرات',
+                        data: [
+                            averages.parentConflict,
+                            averages.emotionalInstability,
+                            averages.socialMediaDependency
+                        ],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    }]
+                }
+            });
+        }
+
+        // تابع برای محاسبه ضریب همبستگی پیرسون
+        function calculateCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
+            const sumX2 = x.reduce((a, b) => a + b * b, 0);
+            const sumY2 = y.reduce((a, b) => a + b * b, 0);
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            return numerator / denominator;
+        }
+
         // اجرای اصلی
         async function init() {
             const data = await loadCSVData();
@@ -297,6 +427,9 @@
                 createBarCharts(data);
                 createScatterPlots(averages);
                 createPieCharts(data);
+                createGroupedBarChart(data);
+                createCorrelationMatrix(averages);
+                createBoxPlot(averages);
             } else {
                 console.error('No data available');
             }

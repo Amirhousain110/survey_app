@@ -14,8 +14,6 @@ if (!fs.existsSync(publicDir)) {
 // سرویس دهی فایل‌های استاتیک از پوشه public
 app.use(express.static(publicDir));
 
-// تنظیمات پسورد برای صفحه دانلود
-const DOWNLOAD_PASSWORD = 'shadan1388'; // پسورد پیش‌فرض
 
 // مسیر فایل CSV در پوشه public
 const CSV_FILE = path.join(publicDir, 'survey_responses.csv');
@@ -78,193 +76,78 @@ app.post('/save-survey', (req, res) => {
   }
 });
 
-// Route برای صفحه دانلود با محافظت پسورد
+// Route برای صفحه دانلود
 app.get('/download', (req, res) => {
-  const password = req.query.password;
-  
-  if (password === DOWNLOAD_PASSWORD) {
-    const html = `
-      <!DOCTYPE html>
-      <html lang="fa" dir="rtl">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>دانلود نتایج پرسشنامه</title>
-          <style>
-              body {
-                  font-family: 'Arial', sans-serif;
-                  background-color: #f5f7fa;
-                  margin: 0;
-                  padding: 0;
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  height: 100vh;
-                  text-align: center;
-              }
-              .download-container {
-                  background-color: white;
-                  padding: 40px;
-                  border-radius: 10px;
-                  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-                  max-width: 500px;
-                  width: 90%;
-              }
-              h1 {
-                  color: #2c3e50;
-                  margin-bottom: 20px;
-              }
-              p {
-                  color: #7f8c8d;
-                  margin-bottom: 30px;
-              }
-              .download-btn {
-                  background-color: #3498db;
-                  color: white;
-                  border: none;
-                  padding: 12px 30px;
-                  font-size: 16px;
-                  border-radius: 5px;
-                  cursor: pointer;
-                  transition: background-color 0.3s;
-                  text-decoration: none;
-                  display: inline-block;
-                  margin: 0 10px 10px 10px;
-              }
-              .download-btn:hover {
-                  background-color: #2980b9;
-              }
-              .icon {
-                  font-size: 50px;
-                  color: #3498db;
-                  margin-bottom: 20px;
-              }
-              .logout-btn {
-                  background-color: #e74c3c;
-                  color: white;
-                  border: none;
-                  padding: 8px 16px;
-                  border-radius: 4px;
-                  cursor: pointer;
-                  font-size: 14px;
-                  margin-top: 20px;
-              }
-              .logout-btn:hover {
-                  background-color: #c0392b;
-              }
-          </style>
-      </head>
-      <body>
-          <div class="download-container">
-              <div class="icon">📊</div>
-              <h1>دانلود نتایج پرسشنامه</h1>
-              <p>برای دریافت فایل CSV حاوی تمام پاسخ‌ها، دکمه زیر را کلیک کنید</p>
-              <a href="/survey_responses.csv" class="download-btn">دانلود فایل CSV</a>
-              <a href="/charts.html" class="download-btn">نمایش نمودار اطلاعات</a>
-              <button class="logout-btn" onclick="logout()">خروج</button>
-          </div>
-          
-          <script>
-              function logout() {
-                  window.location.href = '/download';
-              }
-          </script>
-      </body>
-      </html>
-    `;
-    res.send(html);
-  } else {
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="fa" dir="rtl">
-      <head>
+  const html = `
+    <!DOCTYPE html>
+    <html lang="fa" dir="rtl">
+    <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ورود به صفحه دانلود</title>
+        <title>دانلود نتایج پرسشنامه</title>
         <style>
-          body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-          }
-          .login-container {
-            background-color: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 90%;
-          }
-          h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-          }
-          .form-group {
-            margin-bottom: 20px;
-          }
-          input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-          }
-          button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-          }
-          button:hover {
-            background-color: #2980b9;
-          }
-          .error {
-            color: #e74c3c;
-            margin-top: 10px;
-            display: none;
-          }
+            body {
+                font-family: 'Arial', sans-serif;
+                background-color: #f5f7fa;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                text-align: center;
+            }
+            .download-container {
+                background-color: white;
+                padding: 40px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                width: 90%;
+            }
+            h1 {
+                color: #2c3e50;
+                margin-bottom: 20px;
+            }
+            p {
+                color: #7f8c8d;
+                margin-bottom: 30px;
+            }
+            .download-btn {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 12px 30px;
+                font-size: 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                text-decoration: none;
+                display: inline-block;
+            }
+            .download-btn:hover {
+                background-color: #2980b9;
+            }
+            .icon {
+                font-size: 50px;
+                color: #3498db;
+                margin-bottom: 20px;
+            }
         </style>
-      </head>
-      <body>
-        <div class="login-container">
-          <h1>ورود به صفحه دانلود</h1>
-          <form id="loginForm" onsubmit="return validateForm()">
-            <div class="form-group">
-              <input type="password" id="password" placeholder="رمز عبور را وارد کنید" required>
-            </div>
-            <button type="submit">ورود</button>
-            <div id="error" class="error">رمز عبور اشتباه است</div>
-          </form>
+    </head>
+    <body>
+        <div class="download-container">
+            <div class="icon">📊</div>
+            <h1>دانلود نتایج پرسشنامه</h1>
+            <p>برای دریافت فایل CSV حاوی تمام پاسخ‌ها، دکمه زیر را کلیک کنید</p>
+            <a href="/survey_responses.csv" class="download-btn">دانلود فایل CSV</a>
+            <a href="charts.html" class="download-btn">نمایش نمودار اطلاعات</a>
+
         </div>
-        
-        <script>
-          function validateForm() {
-            const password = document.getElementById('password').value;
-            window.location.href = '/download?password=' + encodeURIComponent(password);
-            return false;
-          }
-          
-          // نمایش پیام خطا اگر پسورد اشتباه باشد
-          const urlParams = new URLSearchParams(window.location.search);
-          if (urlParams.has('password') && urlParams.get('password') !== '${DOWNLOAD_PASSWORD}') {
-            document.getElementById('error').style.display = 'block';
-          }
-        </script>
-      </body>
-      </html>
-    `);
-  }
+    </body>
+    </html>
+    `;
+  res.send(html);
 });
 
 // Route

@@ -41,32 +41,11 @@
                 grid-template-columns: 1fr;
             }
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .logout-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .logout-btn:hover {
-            background-color: #c0392b;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>تحلیل داده‌های پرسشنامه</h1>
-            <button class="logout-btn" onclick="logout()">خروج</button>
-        </div>
+        <h1>تحلیل داده‌های پرسشنامه</h1>
         
         <div class="grid">
             <!-- نمودارهای ستونی -->
@@ -112,21 +91,6 @@
     </div>
 
     <script>
-        // بررسی دسترسی به صفحه
-        function checkAccess() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (!urlParams.has('password')) {
-                window.location.href = '/charts';
-                return false;
-            }
-            return true;
-        }
-
-        // تابع خروج
-        function logout() {
-            window.location.href = '/charts';
-        }
-
         // تابع برای خواندن فایل CSV
         async function loadCSVData() {
             try {
@@ -327,8 +291,6 @@
 
         // اجرای اصلی
         async function init() {
-            if (!checkAccess()) return;
-            
             const data = await loadCSVData();
             if (data.length > 0) {
                 const averages = calculateSectionAverages(data);
